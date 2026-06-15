@@ -102,7 +102,7 @@ CATEGORICAL_FEATURES = [
 Structure ajoutee :
 
 ```text
-src/mlproject/
+src/
 |-- __init__.py
 |-- config.py
 |-- data.py
@@ -116,6 +116,20 @@ Role des fichiers :
 - `features.py` construit le pre-processing scikit-learn avec imputation, standardisation
   et encodage one-hot.
 
+La configuration supporte une surcouche par variables d'environnement pour les elements qui
+peuvent changer selon l'environnement :
+
+- `MLFLOW_TRACKING_URI`
+- `MLFLOW_EXPERIMENT`
+- `MODEL_NAME`
+- `MODEL_STAGE`
+
+Les stages prevus pour le cycle de vie du modele sont :
+
+```python
+MODEL_STAGES = ["integ", "prepod", "prod"]
+```
+
 Une fois le CSV Kaggle place dans `data/dataset.csv`, la validation se lance avec :
 
 ```bash
@@ -126,5 +140,5 @@ Sur Windows, si `make` n'est pas installe, la commande equivalente est :
 
 ```bash
 $env:PYTHONPATH = "src"
-uv run python -m mlproject.data
+uv run python -m data
 ```

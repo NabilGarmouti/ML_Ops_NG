@@ -12,7 +12,7 @@ from pathlib import Path
 from dotenv import load_dotenv
 
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = Path(__file__).resolve().parents[1]
 load_dotenv(ROOT / ".env")
 
 DATA_PATH = ROOT / "data" / "dataset.csv"
@@ -41,3 +41,8 @@ RANDOM_STATE = 42
 MLFLOW_TRACKING_URI = os.getenv("MLFLOW_TRACKING_URI", "http://127.0.0.1:5000")
 MLFLOW_EXPERIMENT = os.getenv("MLFLOW_EXPERIMENT", "cars-cross-sell-baseline")
 MODEL_NAME = os.getenv("MODEL_NAME", "cars-cross-sell-classifier")
+MODEL_STAGES = ["integ", "prepod", "prod"]
+MODEL_STAGE = os.getenv("MODEL_STAGE", "integ")
+
+if MODEL_STAGE not in MODEL_STAGES:
+    raise ValueError(f"MODEL_STAGE doit etre dans {MODEL_STAGES}, valeur recue: {MODEL_STAGE!r}")

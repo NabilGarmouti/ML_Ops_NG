@@ -6,7 +6,7 @@ from typing import Any
 import pandas as pd
 from sklearn.model_selection import train_test_split
 
-from mlproject.config import (
+from config import (
     CATEGORICAL_FEATURES,
     DATA_PATH,
     NUMERIC_FEATURES,
