@@ -1,29 +1,23 @@
 # ==============================================================================
-# Projet de classification - Makefile (squelette)
-# ==============================================================================
-# Seuls les targets d'INSTALLATION sont fournis. Les autres sont a completer
-# au fil des TP (un `# TODO (Sx)` indique la commande attendue).
-# Environnement gere par uv (Python 3.13) a partir de pyproject.toml.
-# Aide : make help
+# Cars - Projet MLOps automobile (squelette)
 # ==============================================================================
 
-SHELL        := /bin/sh
-PYTHON       := uv run python
-RUN          := uv run
-VENV_DIR     := .venv
-PYTHONPATH   ?= .
+SHELL         := /bin/sh
+PYTHON        := uv run python
+RUN           := uv run
+VENV_DIR      := .venv
+PYTHONPATH    ?= src
 export PYTHONPATH
-API_HOST     ?= 127.0.0.1
-API_PORT     ?= 8000
+API_HOST      ?= 127.0.0.1
+API_PORT      ?= 8000
 FRONTEND_PORT ?= 8501
-MLFLOW_PORT  := 5000
-C            ?= 1.0
-MAX_ITER     ?= 1000
-CV           ?= 5
-SCORING      ?= roc_auc
-N_TRIALS     ?= 30
+MLFLOW_PORT   := 5000
+C             ?= 1.0
+MAX_ITER      ?= 1000
+CV            ?= 5
+SCORING       ?= roc_auc
+N_TRIALS      ?= 30
 
-# Couleurs ANSI
 YELLOW := $(shell printf '\033[33m')
 GREEN  := $(shell printf '\033[32m')
 RED    := $(shell printf '\033[31m')
@@ -38,18 +32,8 @@ RESET  := $(shell printf '\033[0m')
         docker-build docker-run docker-up docker-down \
         lint format type test check
 
-
-# ==============================================================================
-# Help
-# ==============================================================================
-
 help: ## Liste des commandes disponibles
 	@awk 'BEGIN {FS = ":.*?## "} /^[a-zA-Z_-]+:.*?## / {printf "$(CYAN)%-16s$(RESET) %s\n", $$1, $$2}' $(MAKEFILE_LIST)
-
-
-# ==============================================================================
-# Setup - Installation de l'environnement Python (uv + pyproject.toml) [FOURNI]
-# ==============================================================================
 
 check-uv:
 	@command -v uv >/dev/null 2>&1 || { \
@@ -95,13 +79,8 @@ doctor: check-uv check-venv ## Diagnostique l'environnement de travail
 	@$(PYTHON) --version
 	@echo "$(GREEN)[OK] Environnement pret$(RESET)"
 
-
-# ==============================================================================
-# Pipeline ML  [A COMPLETER]
-# ==============================================================================
-
-data: ## Prepare/genere le jeu de donnees dans data/
-	# TODO (S0) : appeler votre script de preparation de donnees
+data: ## Importera le CSV Kaggle dans data/ lors de la prochaine etape
+	# TODO (S0) : placer le dataset Kaggle dans data/dataset.csv
 
 train: ## Entraine la baseline -> models/model.joblib (C=.. MAX_ITER=..)
 	# TODO (S5) : $(PYTHON) -m mlproject.train --c $(C) --max-iter $(MAX_ITER)
@@ -121,16 +100,11 @@ api: ## Lance l'API FastAPI en rechargement auto (voir API_HOST/API_PORT)
 frontend: ## Lance le frontend Streamlit (voir FRONTEND_PORT, API_URL)
 	# TODO (S14bis) : $(RUN) streamlit run frontend/app.py --server.port $(FRONTEND_PORT)
 
-
-# ==============================================================================
-# Docker  [A COMPLETER]
-# ==============================================================================
-
 docker-build: ## Construit l'image d'entrainement
-	# TODO (S8) : docker build -f docker/Dockerfile.train -t mlproject-train .
+	# TODO (S8) : docker build -f docker/Dockerfile.train -t cars-train .
 
 docker-run: ## Lance l'entrainement en conteneur
-	# TODO (S8) : docker run --rm -v "$(CURDIR)/../models:/app/models" mlproject-train
+	# TODO (S8) : docker run --rm -v "$(CURDIR)/models:/app/models" cars-train
 
 docker-up: ## Demarre la stack (mlflow, api, frontend)
 	# TODO (S14) : docker compose -f docker-compose.yml up -d --build mlflow api frontend
@@ -138,21 +112,16 @@ docker-up: ## Demarre la stack (mlflow, api, frontend)
 docker-down: ## Arrete et supprime les conteneurs (conserve les volumes)
 	# TODO (S14) : docker compose -f docker-compose.yml down
 
-
-# ==============================================================================
-# Qualite  [A COMPLETER]
-# ==============================================================================
-
 lint: ## Verifie le style (ruff)
-	# TODO : $(RUN) ruff check mlproject
+	$(RUN) ruff check src
 
 format: ## Formate le code (ruff)
-	# TODO : $(RUN) ruff format mlproject
+	$(RUN) ruff format src
 
 type: ## Verifie les types (mypy)
-	# TODO : $(RUN) mypy mlproject
+	$(RUN) mypy src
 
 test: ## Lance les tests (pytest)
-	# TODO : $(RUN) pytest
+	$(RUN) pytest
 
 check: lint type test ## Workflow qualite complet (lint + types + tests)
