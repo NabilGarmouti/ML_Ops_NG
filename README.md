@@ -64,13 +64,13 @@ Variables categorielles :
 Le dataset sera importe plus tard dans le dossier `data/`, par exemple sous le nom :
 
 ```text
-data/dataset.csv
+data/train.csv
 ```
 
 Apres import, le fichier de configuration du pipeline devra pointer vers cette cible :
 
 ```python
-DATA_PATH = ROOT / "data" / "dataset.csv"
+DATA_PATH = ROOT / "data" / "train.csv"
 TARGET = "Response"
 NUMERIC_FEATURES = [
     "Age",
@@ -112,9 +112,9 @@ src/
 Role des fichiers :
 
 - `config.py` centralise le chemin du dataset, la cible, les colonnes et les noms MLflow ;
-- `data.py` charge le CSV, valide les colonnes attendues et prepare le split train/test ;
-- `features.py` construit le pre-processing scikit-learn avec imputation, standardisation
-  et encodage one-hot.
+- `data.py` lit le CSV brut et prepare le split train/test ;
+- `features.py` nettoie les donnees, valide les colonnes attendues et construit le
+  pre-processing scikit-learn avec imputation, standardisation et encodage one-hot.
 
 La configuration supporte une surcouche par variables d'environnement pour les elements qui
 peuvent changer selon l'environnement :
@@ -130,7 +130,7 @@ Les stages prevus pour le cycle de vie du modele sont :
 MODEL_STAGES = ["integ", "prepod", "prod"]
 ```
 
-Une fois le CSV Kaggle place dans `data/dataset.csv`, la validation se lance avec :
+Une fois le CSV Kaggle place dans `data/train.csv`, la validation se lance avec :
 
 ```bash
 make data
@@ -140,5 +140,5 @@ Sur Windows, si `make` n'est pas installe, la commande equivalente est :
 
 ```bash
 $env:PYTHONPATH = "src"
-uv run python -m data
+uv run python -m features
 ```

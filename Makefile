@@ -80,7 +80,7 @@ doctor: check-uv check-venv ## Diagnostique l'environnement de travail
 	@echo "$(GREEN)[OK] Environnement pret$(RESET)"
 
 data: ## Valide le CSV Kaggle place dans data/dataset.csv
-	$(PYTHON) -m data
+	$(PYTHON) -m features
 
 train: ## Entraine la baseline -> models/model.joblib (C=.. MAX_ITER=..)
 	# TODO (S5) : $(PYTHON) -m train --c $(C) --max-iter $(MAX_ITER)
