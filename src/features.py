@@ -1,4 +1,5 @@
 """Pre-processing des variables numeriques et categorielles."""
+
 from __future__ import annotations
 
 import pandas as pd

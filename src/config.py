@@ -4,13 +4,13 @@ Le pipeline lit les chemins, la cible et les colonnes depuis ce fichier. Pour
 changer de dataset plus tard, l'objectif est de modifier cette configuration
 plutot que les scripts d'entrainement.
 """
+
 from __future__ import annotations
 
 import os
 from pathlib import Path
 
 from dotenv import load_dotenv
-
 
 ROOT = Path(__file__).resolve().parents[1]
 load_dotenv(ROOT / ".env")
