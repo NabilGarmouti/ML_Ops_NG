@@ -2,7 +2,7 @@
 name = "cars"
 version = "0.1.0"
 description = "Projet MLOps de classification binaire applique a l'industrie automobile."
-readme = "PROBLEMATIQUE.md"
+readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
     "fastapi>=0.115.0",

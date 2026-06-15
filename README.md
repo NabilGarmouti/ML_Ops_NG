@@ -87,3 +87,44 @@ CATEGORICAL_FEATURES = [
     "Vehicle_Damage",
 ]
 ```
+
+## Avancement
+
+### Etape 1 - Initialisation du projet
+
+- creation du `Makefile` a la racine ;
+- creation du `pyproject.toml` ;
+- choix de la problematique metier ;
+- choix du dataset Kaggle.
+
+### Etape 2 - Configuration dataset
+
+Structure ajoutee :
+
+```text
+src/mlproject/
+|-- __init__.py
+|-- config.py
+|-- data.py
+`-- features.py
+```
+
+Role des fichiers :
+
+- `config.py` centralise le chemin du dataset, la cible, les colonnes et les noms MLflow ;
+- `data.py` charge le CSV, valide les colonnes attendues et prepare le split train/test ;
+- `features.py` construit le pre-processing scikit-learn avec imputation, standardisation
+  et encodage one-hot.
+
+Une fois le CSV Kaggle place dans `data/dataset.csv`, la validation se lance avec :
+
+```bash
+make data
+```
+
+Sur Windows, si `make` n'est pas installe, la commande equivalente est :
+
+```bash
+$env:PYTHONPATH = "src"
+uv run python -m mlproject.data
+```

@@ -79,8 +79,8 @@ doctor: check-uv check-venv ## Diagnostique l'environnement de travail
 	@$(PYTHON) --version
 	@echo "$(GREEN)[OK] Environnement pret$(RESET)"
 
-data: ## Importera le CSV Kaggle dans data/ lors de la prochaine etape
-	# TODO (S0) : placer le dataset Kaggle dans data/dataset.csv
+data: ## Valide le CSV Kaggle place dans data/dataset.csv
+	$(PYTHON) -m mlproject.data
 
 train: ## Entraine la baseline -> models/model.joblib (C=.. MAX_ITER=..)
 	# TODO (S5) : $(PYTHON) -m mlproject.train --c $(C) --max-iter $(MAX_ITER)
