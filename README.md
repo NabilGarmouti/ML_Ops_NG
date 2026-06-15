@@ -240,3 +240,43 @@ Puis ouvrir :
 ```text
 http://127.0.0.1:5000
 ```
+
+### Etape 5 - Modeles optimises
+
+Le fichier `src/train_models.py` compare trois familles de modeles optimisees avec
+`GridSearchCV` :
+
+- `random_forest`
+- `xgboost`
+- `lightgbm`
+
+Chaque famille est tracee dans MLflow avec :
+
+- un run parent `compare-optimized-models` ;
+- un run enfant par famille de modele ;
+- les meilleurs hyperparametres trouves ;
+- le score moyen de validation croisee ;
+- les metriques de test `precision`, `recall`, `f1`, `roc_auc` ;
+- le meilleur modele enregistre dans le Model Registry sous `cars-cross-sell-classifier`.
+
+Commande rapide de test :
+
+```bash
+$env:PYTHONPATH = "src"
+uv run python -m train_models --cv 2 --scoring f1 --sample-size 1000
+```
+
+Commande complete :
+
+```bash
+$env:PYTHONPATH = "src"
+uv run python -m train_models --cv 5 --scoring f1 --sample-size 0
+```
+
+Les artefacts locaux generes sont :
+
+```text
+models/optimized_metrics.csv
+models/optimized_confusion_matrix.png
+models/model.joblib
+```

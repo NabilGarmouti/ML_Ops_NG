@@ -15,7 +15,7 @@ MLFLOW_PORT   := 5000
 C             ?= 1.0
 MAX_ITER      ?= 1000
 CV            ?= 5
-SCORING       ?= roc_auc
+SCORING       ?= f1
 N_TRIALS      ?= 30
 SAMPLE_SIZE   ?= 0
 SELECTION_METRIC ?= f1
@@ -88,7 +88,7 @@ train: ## Entraine la baseline -> models/model.joblib (C=.. MAX_ITER=..)
 	$(PYTHON) -m train --sample-size $(SAMPLE_SIZE) --selection-metric $(SELECTION_METRIC) --c $(C) --max-iter $(MAX_ITER)
 
 train-models: ## Compare RF / XGBoost / LightGBM (GridSearchCV) + SHAP (CV=.. SCORING=..)
-	# TODO (S7) : $(PYTHON) -m train_models --cv $(CV) --scoring $(SCORING)
+	$(PYTHON) -m train_models --cv $(CV) --scoring $(SCORING) --sample-size $(SAMPLE_SIZE)
 
 train-optuna: ## Optimise RF / XGBoost / LightGBM avec Optuna (N_TRIALS=.. CV=..)
 	# TODO (S6) : $(PYTHON) -m train_optuna --n-trials $(N_TRIALS) --cv $(CV)
