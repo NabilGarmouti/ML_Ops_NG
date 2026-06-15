@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import tempfile
+import warnings
 from pathlib import Path
 
 import joblib
@@ -11,11 +12,8 @@ import matplotlib.pyplot as plt
 import mlflow
 import mlflow.sklearn
 import pandas as pd
-from sklearn.ensemble import (
-    ExtraTreesClassifier,
-    HistGradientBoostingClassifier,
-    RandomForestClassifier,
-)
+from lightgbm import LGBMClassifier
+from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import (
     ConfusionMatrixDisplay,
@@ -27,10 +25,17 @@ from sklearn.metrics import (
 )
 from sklearn.pipeline import Pipeline
 from sklearn.tree import DecisionTreeClassifier
+from xgboost import XGBClassifier
 
 from config import MLFLOW_EXPERIMENT, MLFLOW_TRACKING_URI, MODEL_DIR, MODEL_STAGE, RANDOM_STATE
 from data import load_data, split
 from features import build_preprocessor, clean_data, validate_clean_data
+
+warnings.filterwarnings(
+    "ignore",
+    message="X does not have valid feature names",
+    category=UserWarning,
+)
 
 
 def build_models(c: float = 1.0, max_iter: int = 1000) -> dict[str, Pipeline]:
@@ -53,15 +58,19 @@ def build_models(c: float = 1.0, max_iter: int = 1000) -> dict[str, Pipeline]:
             n_jobs=-1,
             random_state=RANDOM_STATE,
         ),
-        "extra_trees": ExtraTreesClassifier(
+        "xgboost": XGBClassifier(
+            eval_metric="logloss",
             n_estimators=100,
-            class_weight="balanced",
+            max_depth=3,
+            learning_rate=0.1,
             n_jobs=-1,
             random_state=RANDOM_STATE,
         ),
-        "hist_gradient_boosting": HistGradientBoostingClassifier(
-            max_iter=100,
+        "lightgbm": LGBMClassifier(
+            class_weight="balanced",
+            n_estimators=100,
             random_state=RANDOM_STATE,
+            verbose=-1,
         ),
     }
 
