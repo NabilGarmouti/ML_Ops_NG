@@ -17,6 +17,8 @@ MAX_ITER      ?= 1000
 CV            ?= 5
 SCORING       ?= roc_auc
 N_TRIALS      ?= 30
+SAMPLE_SIZE   ?= 0
+SELECTION_METRIC ?= f1
 
 YELLOW := $(shell printf '\033[33m')
 GREEN  := $(shell printf '\033[32m')
@@ -83,7 +85,7 @@ data: ## Valide le CSV Kaggle place dans data/dataset.csv
 	$(PYTHON) -m features
 
 train: ## Entraine la baseline -> models/model.joblib (C=.. MAX_ITER=..)
-	# TODO (S5) : $(PYTHON) -m train --c $(C) --max-iter $(MAX_ITER)
+	$(PYTHON) -m train --sample-size $(SAMPLE_SIZE) --selection-metric $(SELECTION_METRIC) --c $(C) --max-iter $(MAX_ITER)
 
 train-models: ## Compare RF / XGBoost / LightGBM (GridSearchCV) + SHAP (CV=.. SCORING=..)
 	# TODO (S7) : $(PYTHON) -m train_models --cv $(CV) --scoring $(SCORING)

@@ -142,3 +142,59 @@ Sur Windows, si `make` n'est pas installe, la commande equivalente est :
 $env:PYTHONPATH = "src"
 uv run python -m features
 ```
+
+### Etape 3 - Baseline d'entrainement
+
+Le fichier `src/train.py` entraine et compare cinq modeles :
+
+- `logistic_regression`
+- `decision_tree`
+- `random_forest`
+- `extra_trees`
+- `hist_gradient_boosting`
+
+Les metriques suivies sont :
+
+- `accuracy`
+- `precision`
+- `recall`
+- `f1`
+- `roc_auc`
+
+La commande d'entrainement est :
+
+```bash
+make train
+```
+
+Sur Windows, si `make` n'est pas installe :
+
+```bash
+$env:PYTHONPATH = "src"
+uv run python -m train --sample-size 0 --selection-metric f1
+```
+
+Le choix du modele sauvegarde se fait avec `--selection-metric`. Par defaut, on utilise
+`f1`, car le dataset est desequilibre et le meilleur `roc_auc` ne donne pas toujours le
+meilleur compromis metier.
+
+Sur le dataset complet, le benchmark actuel donne :
+
+| modele | accuracy | precision | recall | f1 | roc_auc |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| decision_tree | 0.698 | 0.278 | 0.919 | 0.427 | 0.846 |
+| logistic_regression | 0.641 | 0.251 | 0.974 | 0.399 | 0.839 |
+| extra_trees | 0.862 | 0.350 | 0.150 | 0.210 | 0.825 |
+| random_forest | 0.867 | 0.359 | 0.114 | 0.173 | 0.832 |
+| hist_gradient_boosting | 0.877 | 0.400 | 0.002 | 0.005 | 0.857 |
+
+Le modele retenu par defaut est donc `decision_tree`, car il obtient le meilleur `f1` sur
+ce benchmark.
+
+Artefacts generes localement :
+
+```text
+models/metrics.csv
+models/model.joblib
+models/confusion_matrix.png
+```
