@@ -198,3 +198,45 @@ models/metrics.csv
 models/model.joblib
 models/confusion_matrix.png
 ```
+
+### Etape 4 - Tracking MLflow
+
+L'entrainement trace automatiquement les experiences avec MLflow.
+
+Par defaut, le tracking est local :
+
+```python
+MLFLOW_TRACKING_URI = sqlite:///mlflow.db
+```
+
+Il peut etre surcharge via variable d'environnement :
+
+```bash
+MLFLOW_TRACKING_URI=http://127.0.0.1:5000
+```
+
+Chaque entrainement cree :
+
+- un run parent `baseline_benchmark` ;
+- un run enfant par modele entraine ;
+- les parametres principaux ;
+- les metriques `accuracy`, `precision`, `recall`, `f1`, `roc_auc` ;
+- les artefacts `metrics.csv`, `confusion_matrix.png` et le meilleur modele.
+
+Pour lancer l'interface MLflow :
+
+```bash
+make mlflow
+```
+
+Sur Windows, si `make` n'est pas installe :
+
+```bash
+uv run mlflow ui --backend-store-uri sqlite:///mlflow.db --host 127.0.0.1 --port 5000
+```
+
+Puis ouvrir :
+
+```text
+http://127.0.0.1:5000
+```

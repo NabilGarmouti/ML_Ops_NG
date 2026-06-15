@@ -3,10 +3,13 @@
 from __future__ import annotations
 
 import argparse
+import tempfile
 from pathlib import Path
 
 import joblib
 import matplotlib.pyplot as plt
+import mlflow
+import mlflow.sklearn
 import pandas as pd
 from sklearn.ensemble import (
     ExtraTreesClassifier,
@@ -25,7 +28,7 @@ from sklearn.metrics import (
 from sklearn.pipeline import Pipeline
 from sklearn.tree import DecisionTreeClassifier
 
-from config import MODEL_DIR, RANDOM_STATE
+from config import MLFLOW_EXPERIMENT, MLFLOW_TRACKING_URI, MODEL_DIR, MODEL_STAGE, RANDOM_STATE
 from data import load_data, split
 from features import build_preprocessor, clean_data, validate_clean_data
 
@@ -108,6 +111,22 @@ def save_confusion_matrix(model: Pipeline, x_test, y_test, output_path: Path) ->
 METRICS = ["accuracy", "precision", "recall", "f1", "roc_auc"]
 
 
+def configure_mlflow() -> None:
+    """Configure MLflow tracking from project settings."""
+    mlflow.set_tracking_uri(MLFLOW_TRACKING_URI)
+    mlflow.set_experiment(MLFLOW_EXPERIMENT)
+
+
+def _estimator_params(model: Pipeline) -> dict[str, str | int | float | bool | None]:
+    estimator = model.named_steps["clf"]
+    params = estimator.get_params()
+    return {
+        key: value
+        for key, value in params.items()
+        if isinstance(value, str | int | float | bool) or value is None
+    }
+
+
 def train(
     c: float = 1.0,
     max_iter: int = 1000,
@@ -117,6 +136,8 @@ def train(
     """Train five models and save the best one according to the selected metric."""
     if selection_metric not in METRICS:
         raise ValueError(f"selection_metric doit etre dans {METRICS}")
+
+    configure_mlflow()
 
     raw_df = load_data()
     df = clean_data(raw_df)
@@ -131,27 +152,59 @@ def train(
     results: list[dict[str, float | str]] = []
     fitted_models: dict[str, Pipeline] = {}
 
-    for name, model in models.items():
-        print(f">> Entrainement: {name}")
-        model.fit(x_train, y_train)
-        metrics = evaluate_model(name, model, x_test, y_test)
-        results.append(metrics)
-        fitted_models[name] = model
-        print(
-            f"{name}: "
-            f"f1={metrics['f1']:.3f} "
-            f"roc_auc={metrics['roc_auc']:.3f} "
-            f"recall={metrics['recall']:.3f}"
+    with mlflow.start_run(run_name="baseline_benchmark"):
+        mlflow.log_params(
+            {
+                "sample_size": sample_size,
+                "selection_metric": selection_metric,
+                "model_stage": MODEL_STAGE,
+                "train_rows": len(x_train),
+                "test_rows": len(x_test),
+                "positive_rate": float(df["Response"].mean()),
+            }
         )
 
-    results_df = pd.DataFrame(results).sort_values(selection_metric, ascending=False)
-    best_name = str(results_df.iloc[0]["model"])
-    best_model = fitted_models[best_name]
+        for name, model in models.items():
+            print(f">> Entrainement: {name}")
+            with mlflow.start_run(run_name=name, nested=True):
+                mlflow.log_param("model_name", name)
+                mlflow.log_params(_estimator_params(model))
 
-    MODEL_DIR.mkdir(parents=True, exist_ok=True)
-    results_df.to_csv(MODEL_DIR / "metrics.csv", index=False)
-    joblib.dump(best_model, MODEL_DIR / "model.joblib")
-    save_confusion_matrix(best_model, x_test, y_test, MODEL_DIR / "confusion_matrix.png")
+                model.fit(x_train, y_train)
+                metrics = evaluate_model(name, model, x_test, y_test)
+                mlflow.log_metrics({key: float(metrics[key]) for key in METRICS})
+                mlflow.sklearn.log_model(model, name="model")
+
+                results.append(metrics)
+                fitted_models[name] = model
+                print(
+                    f"{name}: "
+                    f"f1={metrics['f1']:.3f} "
+                    f"roc_auc={metrics['roc_auc']:.3f} "
+                    f"recall={metrics['recall']:.3f}"
+                )
+
+        results_df = pd.DataFrame(results).sort_values(selection_metric, ascending=False)
+        best_name = str(results_df.iloc[0]["model"])
+        best_model = fitted_models[best_name]
+
+        MODEL_DIR.mkdir(parents=True, exist_ok=True)
+        metrics_path = MODEL_DIR / "metrics.csv"
+        confusion_matrix_path = MODEL_DIR / "confusion_matrix.png"
+        model_path = MODEL_DIR / "model.joblib"
+
+        results_df.to_csv(metrics_path, index=False)
+        joblib.dump(best_model, model_path)
+        save_confusion_matrix(best_model, x_test, y_test, confusion_matrix_path)
+
+        mlflow.log_param("best_model", best_name)
+        mlflow.log_metric(f"best_{selection_metric}", float(results_df.iloc[0][selection_metric]))
+        mlflow.log_artifact(str(metrics_path))
+        mlflow.log_artifact(str(confusion_matrix_path))
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            best_model_path = Path(tmp_dir) / "best_model.joblib"
+            joblib.dump(best_model, best_model_path)
+            mlflow.log_artifact(str(best_model_path), artifact_path="best_model")
 
     print(f">> Meilleur modele ({selection_metric}): {best_name}")
     print(results_df.to_string(index=False))

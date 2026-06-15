@@ -38,7 +38,7 @@ CATEGORICAL_FEATURES: list[str] = [
 
 RANDOM_STATE = 42
 
-MLFLOW_TRACKING_URI = os.getenv("MLFLOW_TRACKING_URI", "http://127.0.0.1:5000")
+MLFLOW_TRACKING_URI = os.getenv("MLFLOW_TRACKING_URI", f"sqlite:///{ROOT / 'mlflow.db'}")
 MLFLOW_EXPERIMENT = os.getenv("MLFLOW_EXPERIMENT", "cars-cross-sell-baseline")
 MODEL_NAME = os.getenv("MODEL_NAME", "cars-cross-sell-classifier")
 MODEL_STAGES = ["integ", "prepod", "prod"]

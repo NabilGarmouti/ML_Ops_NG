@@ -94,7 +94,7 @@ train-optuna: ## Optimise RF / XGBoost / LightGBM avec Optuna (N_TRIALS=.. CV=..
 	# TODO (S6) : $(PYTHON) -m train_optuna --n-trials $(N_TRIALS) --cv $(CV)
 
 mlflow: ## Demarre le serveur MLflow (docker compose)
-	# TODO (S5) : docker compose -f docker-compose.yml up -d mlflow
+	$(RUN) mlflow ui --backend-store-uri sqlite:///mlflow.db --host 127.0.0.1 --port $(MLFLOW_PORT)
 
 api: ## Lance l'API FastAPI en rechargement auto (voir API_HOST/API_PORT)
 	# TODO (S12) : $(RUN) uvicorn api:app --reload --host $(API_HOST) --port $(API_PORT)
