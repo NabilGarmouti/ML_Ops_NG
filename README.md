@@ -257,12 +257,14 @@ Chaque famille est tracee dans MLflow avec :
 - les meilleurs hyperparametres trouves ;
 - le score moyen de validation croisee ;
 - les metriques de test `precision`, `recall`, `f1`, `roc_auc` ;
+- un artefact d'explicabilite `shap_summary.png` ;
 - le meilleur modele enregistre dans le Model Registry sous `cars-cross-sell-classifier`.
 
 Commande rapide de test :
 
 ```bash
 $env:PYTHONPATH = "src"
+uv sync --extra dev --extra explain
 uv run python -m train_models --cv 2 --scoring f1 --sample-size 1000
 ```
 
@@ -270,6 +272,7 @@ Commande complete :
 
 ```bash
 $env:PYTHONPATH = "src"
+uv sync --extra dev --extra explain
 uv run python -m train_models --cv 5 --scoring f1 --sample-size 0
 ```
 

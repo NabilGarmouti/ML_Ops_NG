@@ -35,6 +35,7 @@ from config import (
     RANDOM_STATE,
 )
 from data import load_data, split
+from evaluation import log_shap_summary
 from features import build_preprocessor, clean_data, validate_clean_data
 
 SUPPORTED_SCORING = ["f1", "roc_auc"]
@@ -212,6 +213,7 @@ def log_model_run(result: FitResult, x_test, y_test, cv: int, scoring: str) -> N
             output_dict=True,
         )
         mlflow.log_dict(report, "classification_report.json")
+        log_shap_summary(result.best_estimator, x_test, result.name)
         mlflow.sklearn.log_model(result.best_estimator, name="model")
 
 
