@@ -91,7 +91,7 @@ train-models: ## Compare RF / XGBoost / LightGBM (GridSearchCV) + SHAP (CV=.. SC
 	$(PYTHON) -m train_models --cv $(CV) --scoring $(SCORING) --sample-size $(SAMPLE_SIZE)
 
 train-optuna: ## Optimise RF / XGBoost / LightGBM avec Optuna (N_TRIALS=.. CV=..)
-	# TODO (S6) : $(PYTHON) -m train_optuna --n-trials $(N_TRIALS) --cv $(CV)
+	$(PYTHON) -m train_optuna --n-trials $(N_TRIALS) --cv $(CV) --scoring $(SCORING) --sample-size $(SAMPLE_SIZE)
 
 mlflow: ## Demarre le serveur MLflow (docker compose)
 	$(RUN) mlflow ui --backend-store-uri sqlite:///mlflow.db --host 127.0.0.1 --port $(MLFLOW_PORT)

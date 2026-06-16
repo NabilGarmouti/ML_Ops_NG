@@ -332,3 +332,53 @@ Exemple de payload :
   "Vintage": 217
 }
 ```
+
+### Etape 7 - Optimisation avec Optuna
+
+Le fichier `src/train_optuna.py` optimise les trois memes familles de modeles que
+`train_models.py`, mais cette fois avec `Optuna` et un sampler `TPE` :
+
+- `random_forest`
+- `xgboost`
+- `lightgbm`
+
+L'objectif est de tester une vraie recherche bayesienne d'hyperparametres au lieu d'une
+grille fixe.
+
+Le tracking MLflow reste separe dans `src/tracking.py`. Pour cette etape, on loggue :
+
+- un run parent `optuna-compare-models` ;
+- un run enfant par famille de modele ;
+- un run enfant supplementaire par `trial` Optuna ;
+- les meilleurs hyperparametres de chaque famille ;
+- les metriques `cv_score`, `precision`, `recall`, `f1`, `roc_auc` ;
+- le `shap_summary.png` du meilleur pipeline de chaque famille ;
+- le meilleur modele final dans le Model Registry.
+
+Commande rapide de test :
+
+```bash
+$env:PYTHONPATH = "src"
+uv run python -m train_optuna --n-trials 1 --cv 2 --scoring f1 --sample-size 300
+```
+
+Commande complete :
+
+```bash
+make train-optuna N_TRIALS=30 CV=5 SCORING=f1 SAMPLE_SIZE=0
+```
+
+Sur Windows, sans `make` :
+
+```bash
+$env:PYTHONPATH = "src"
+uv run python -m train_optuna --n-trials 30 --cv 5 --scoring f1 --sample-size 0
+```
+
+Artefacts locaux generes :
+
+```text
+models/optuna_metrics.csv
+models/optuna_confusion_matrix.png
+models/model.joblib
+```
