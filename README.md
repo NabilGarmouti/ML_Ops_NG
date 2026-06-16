@@ -260,6 +260,9 @@ Chaque famille est tracee dans MLflow avec :
 - un artefact d'explicabilite `shap_summary.png` ;
 - le meilleur modele enregistre dans le Model Registry sous `cars-cross-sell-classifier`.
 
+Le tracking MLflow est isole dans `src/tracking.py`. `train_models.py` se concentre sur
+l'optimisation des modeles et appelle les fonctions de tracking dediees.
+
 Commande rapide de test :
 
 ```bash

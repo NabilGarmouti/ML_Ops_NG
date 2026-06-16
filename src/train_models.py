@@ -10,13 +10,11 @@ from pathlib import Path
 import joblib
 import matplotlib.pyplot as plt
 import mlflow
-import mlflow.sklearn
 import pandas as pd
 from lightgbm import LGBMClassifier
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import (
     ConfusionMatrixDisplay,
-    classification_report,
     f1_score,
     precision_score,
     recall_score,
@@ -27,16 +25,17 @@ from sklearn.pipeline import Pipeline
 from xgboost import XGBClassifier
 
 from config import (
-    MLFLOW_EXPERIMENT,
-    MLFLOW_TRACKING_URI,
     MODEL_DIR,
-    MODEL_NAME,
-    MODEL_STAGE,
     RANDOM_STATE,
 )
 from data import load_data, split
-from evaluation import log_shap_summary
 from features import build_preprocessor, clean_data, validate_clean_data
+from tracking import (
+    configure_mlflow,
+    log_optimized_best_model,
+    log_optimized_model_run,
+    log_optimized_parent_run_params,
+)
 
 SUPPORTED_SCORING = ["f1", "roc_auc"]
 
@@ -68,12 +67,6 @@ class FitResult:
     recall: float
     f1: float
     roc_auc: float
-
-
-def configure_mlflow() -> None:
-    """Configure MLflow from project settings."""
-    mlflow.set_tracking_uri(MLFLOW_TRACKING_URI)
-    mlflow.set_experiment(MLFLOW_EXPERIMENT)
 
 
 def build_model_specs() -> list[ModelSpec]:
@@ -189,34 +182,6 @@ def result_to_dict(result: FitResult) -> dict[str, float | str]:
     }
 
 
-def log_model_run(result: FitResult, x_test, y_test, cv: int, scoring: str) -> None:
-    """Log one optimized model as a nested MLflow run."""
-    with mlflow.start_run(run_name=result.name, nested=True):
-        mlflow.set_tag("model_family", result.name)
-        mlflow.set_tag("model_stage", MODEL_STAGE)
-        mlflow.set_tag("search_method", "GridSearchCV")
-        mlflow.log_param("cv", cv)
-        mlflow.log_param("scoring", scoring)
-        mlflow.log_params(result.best_params)
-        mlflow.log_metrics(
-            {
-                f"cv_{scoring}": result.cv_score,
-                "precision": result.precision,
-                "recall": result.recall,
-                "f1": result.f1,
-                "roc_auc": result.roc_auc,
-            }
-        )
-        report = classification_report(
-            y_test,
-            result.best_estimator.predict(x_test),
-            output_dict=True,
-        )
-        mlflow.log_dict(report, "classification_report.json")
-        log_shap_summary(result.best_estimator, x_test, result.name)
-        mlflow.sklearn.log_model(result.best_estimator, name="model")
-
-
 def train_all(cv: int = 5, scoring: str = "f1", sample_size: int = 0) -> pd.DataFrame:
     """Optimize three model families, track them in MLflow and save the best one."""
     if scoring not in SUPPORTED_SCORING:
@@ -235,22 +200,19 @@ def train_all(cv: int = 5, scoring: str = "f1", sample_size: int = 0) -> pd.Data
 
     results: list[FitResult] = []
     with mlflow.start_run(run_name="compare-optimized-models"):
-        mlflow.log_params(
-            {
-                "cv": cv,
-                "scoring": scoring,
-                "sample_size": sample_size,
-                "model_stage": MODEL_STAGE,
-                "train_rows": len(x_train),
-                "test_rows": len(x_test),
-            }
+        log_optimized_parent_run_params(
+            cv=cv,
+            scoring=scoring,
+            sample_size=sample_size,
+            train_rows=len(x_train),
+            test_rows=len(x_test),
         )
 
         for spec in build_model_specs():
             print(f">> Optimisation: {spec.name}")
             result = optimize_model(spec, x_train, y_train, x_test, y_test, cv=cv, scoring=scoring)
             results.append(result)
-            log_model_run(result, x_test, y_test, cv=cv, scoring=scoring)
+            log_optimized_model_run(result, x_test, y_test, cv=cv, scoring=scoring)
             print(
                 f"{result.name}: "
                 f"cv_{scoring}={result.cv_score:.3f} "
@@ -269,15 +231,11 @@ def train_all(cv: int = 5, scoring: str = "f1", sample_size: int = 0) -> pd.Data
         joblib.dump(best.best_estimator, MODEL_DIR / "model.joblib")
         save_confusion_matrix(best.best_estimator, x_test, y_test, confusion_matrix_path)
 
-        mlflow.set_tag("best_model", best.name)
-        mlflow.log_param("registered_model_name", MODEL_NAME)
-        mlflow.log_metric(f"best_{scoring}", float(getattr(best, scoring)))
-        mlflow.log_artifact(str(metrics_path))
-        mlflow.log_artifact(str(confusion_matrix_path))
-        mlflow.sklearn.log_model(
-            best.best_estimator,
-            name="best_model",
-            registered_model_name=MODEL_NAME,
+        log_optimized_best_model(
+            best=best,
+            scoring=scoring,
+            metrics_path=metrics_path,
+            confusion_matrix_path=confusion_matrix_path,
         )
 
     print(f">> Meilleur modele optimise ({scoring}): {best.name}")
