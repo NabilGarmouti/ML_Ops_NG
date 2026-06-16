@@ -1,8 +1,8 @@
 from __future__ import annotations
 
 import joblib
-from fastapi.testclient import TestClient
 import numpy as np
+from fastapi.testclient import TestClient
 
 import api
 

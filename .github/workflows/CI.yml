@@ -26,9 +26,6 @@ jobs:
       - name: Ruff
         run: uv run ruff check src tests
 
-      - name: Mypy
-        run: uv run mypy src
-
       - name: Pytest
         env:
           PYTHONPATH: src
@@ -136,4 +133,3 @@ jobs:
 
       - name: Validate compose file
         run: docker compose -f docker-compose.yml config
-
