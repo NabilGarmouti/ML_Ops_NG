@@ -97,7 +97,7 @@ mlflow: ## Demarre le serveur MLflow (docker compose)
 	$(RUN) mlflow ui --backend-store-uri sqlite:///mlflow.db --host 127.0.0.1 --port $(MLFLOW_PORT)
 
 api: ## Lance l'API FastAPI en rechargement auto (voir API_HOST/API_PORT)
-	# TODO (S12) : $(RUN) uvicorn api:app --reload --host $(API_HOST) --port $(API_PORT)
+	$(RUN) uvicorn api:app --reload --host $(API_HOST) --port $(API_PORT)
 
 frontend: ## Lance le frontend Streamlit (voir FRONTEND_PORT, API_URL)
 	# TODO (S14bis) : $(RUN) streamlit run frontend/app.py --server.port $(FRONTEND_PORT)

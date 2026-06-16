@@ -286,3 +286,49 @@ models/optimized_metrics.csv
 models/optimized_confusion_matrix.png
 models/model.joblib
 ```
+
+### Etape 6 - API FastAPI
+
+Le fichier `src/api.py` expose le modele sauvegarde dans `models/model.joblib`.
+
+Endpoints disponibles :
+
+- `GET /health` : verifie que l'API repond ;
+- `GET /model-info` : retourne les informations du modele servi ;
+- `POST /predict` : retourne la prediction et la probabilite associee.
+
+Lancement :
+
+```bash
+make api
+```
+
+Sur Windows, si `make` n'est pas installe :
+
+```bash
+$env:PYTHONPATH = "src"
+uv run uvicorn api:app --reload --host 127.0.0.1 --port 8000
+```
+
+Documentation interactive :
+
+```text
+http://127.0.0.1:8000/docs
+```
+
+Exemple de payload :
+
+```json
+{
+  "Gender": "Male",
+  "Age": 44,
+  "Driving_License": 1,
+  "Region_Code": 28.0,
+  "Previously_Insured": 0,
+  "Vehicle_Age": "> 2 Years",
+  "Vehicle_Damage": "Yes",
+  "Annual_Premium": 40454.0,
+  "Policy_Sales_Channel": 26.0,
+  "Vintage": 217
+}
+```
