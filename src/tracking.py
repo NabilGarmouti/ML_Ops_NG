@@ -5,17 +5,55 @@ from __future__ import annotations
 from pathlib import Path
 
 import mlflow
+import mlflow.data
 import mlflow.sklearn
+import pandas as pd
 from sklearn.metrics import classification_report
 
-from config import MLFLOW_EXPERIMENT, MLFLOW_TRACKING_URI, MODEL_NAME, MODEL_STAGE
+from config import (
+    DATA_PATH,
+    MLFLOW_EXPERIMENT,
+    MLFLOW_EXPERIMENT_DESCRIPTION,
+    MLFLOW_EXPERIMENT_TAGS,
+    MLFLOW_TRACKING_URI,
+    MODEL_NAME,
+    MODEL_STAGE,
+    TARGET,
+)
 from evaluation import log_shap_summary
 
 
 def configure_mlflow() -> None:
     """Configure MLflow from project settings."""
+    setup_experiment()
+
+
+def setup_experiment() -> None:
+    """Configure MLflow tracking and experiment metadata."""
     mlflow.set_tracking_uri(MLFLOW_TRACKING_URI)
-    mlflow.set_experiment(MLFLOW_EXPERIMENT)
+    experiment = mlflow.set_experiment(MLFLOW_EXPERIMENT)
+    client = mlflow.MlflowClient()
+
+    if MLFLOW_EXPERIMENT_DESCRIPTION:
+        client.set_experiment_tag(
+            experiment.experiment_id,
+            "mlflow.note.content",
+            MLFLOW_EXPERIMENT_DESCRIPTION,
+        )
+
+    for key, value in MLFLOW_EXPERIMENT_TAGS.items():
+        client.set_experiment_tag(experiment.experiment_id, key, value)
+
+
+def log_dataset(df: pd.DataFrame, context: str, name: str = "dataset") -> None:
+    """Attach a dataset reference to the current MLflow run."""
+    dataset = mlflow.data.from_pandas(
+        df,
+        source=str(DATA_PATH),
+        targets=TARGET,
+        name=name,
+    )
+    mlflow.log_input(dataset, context=context)
 
 
 def log_optimized_model_run(result, x_test, y_test, cv: int, scoring: str) -> None:

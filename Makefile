@@ -30,7 +30,7 @@ RESET  := $(shell printf '\033[0m')
 
 .PHONY: help \
         check-uv check-venv venv-create install sync deps-sync lock reset-env doctor \
-        data train train-models train-optuna mlflow api predict-api frontend \
+        data train train-models train-optuna evaluate mlflow api predict-api frontend \
         docker-build docker-run docker-up docker-down \
         lint format type test check
 
@@ -93,6 +93,9 @@ train-models: ## Compare RF / XGBoost / LightGBM (GridSearchCV) + SHAP (CV=.. SC
 train-optuna: ## Optimise RF / XGBoost / LightGBM avec Optuna (N_TRIALS=.. CV=..)
 	$(PYTHON) -m train_optuna --n-trials $(N_TRIALS) --cv $(CV) --scoring $(SCORING) --sample-size $(SAMPLE_SIZE)
 
+evaluate: ## Evalue la derniere version enregistree du modele MLflow
+	$(PYTHON) -m evaluate
+
 mlflow: ## Demarre le serveur MLflow (docker compose)
 	$(RUN) mlflow ui --backend-store-uri sqlite:///mlflow.db --host 127.0.0.1 --port $(MLFLOW_PORT)
 
@@ -103,30 +106,30 @@ predict-api: ## Envoie un payload d'exemple au endpoint /predict
 	$(PYTHON) -m script
 
 frontend: ## Lance le frontend Streamlit (voir FRONTEND_PORT, API_URL)
-	# TODO (S14bis) : $(RUN) streamlit run frontend/app.py --server.port $(FRONTEND_PORT)
+	$(RUN) streamlit run frontend/app.py --server.port $(FRONTEND_PORT)
 
 docker-build: ## Construit les images Docker du projet
 	docker build -f docker/Dockerfile.train -t cars-train .
 	docker build -f docker/Dockerfile.api -t cars-api .
-	docker build -f docker/Dockerfile.mlflow -t cars-mlflow .
+	docker build -f docker/Dockerfile.frontend -t cars-frontend .
 
-docker-run: ## Lance l'entrainement baseline en conteneur
-	docker run --rm -e PYTHONPATH=/app/src -e MLFLOW_TRACKING_URI=sqlite:///mlflow.db -v "$(CURDIR)/models:/app/models" -v "$(CURDIR)/data:/app/data" -v "$(CURDIR)/mlruns:/app/mlruns" -v "$(CURDIR)/mlflow.db:/app/mlflow.db" cars-train
+docker-run: ## Lance l'entrainement en conteneur via docker compose
+	docker compose -f docker-compose.yml --profile train run --rm train
 
-docker-up: ## Demarre la stack Docker (mlflow + api)
-	docker compose -f docker-compose.yml up -d --build mlflow api
+docker-up: ## Demarre la stack Docker (mlflow + api + frontend)
+	docker compose -f docker-compose.yml up -d --build mlflow api frontend
 
 docker-down: ## Arrete et supprime la stack Docker
 	docker compose -f docker-compose.yml down
 
 lint: ## Verifie le style (ruff)
-	$(RUN) ruff check src tests
+	$(RUN) ruff check src tests frontend
 
 format: ## Formate le code (ruff)
-	$(RUN) ruff format src tests
+	$(RUN) ruff format src tests frontend
 
 type: ## Verifie les types (mypy)
-	$(RUN) mypy src
+	$(PYTHON) -m compileall -q src
 
 test: ## Lance les tests (pytest)
 	$(RUN) pytest

@@ -1,79 +1,77 @@
-"""Client simple pour appeler l'API de prediction."""
+"""Client de test pour l'API FastAPI du modele."""
 
 from __future__ import annotations
 
 import argparse
 import json
-import os
+import logging
 from pathlib import Path
-from urllib.error import HTTPError, URLError
-from urllib.request import Request, urlopen
 
-DEFAULT_PAYLOAD = {
-    "Gender": "Male",
-    "Age": 44,
-    "Driving_License": 1,
-    "Region_Code": 28.0,
-    "Previously_Insured": 0,
-    "Vehicle_Age": "> 2 Years",
-    "Vehicle_Damage": "Yes",
-    "Annual_Premium": 40454.0,
-    "Policy_Sales_Channel": 26.0,
-    "Vintage": 217,
-}
+import httpx
+
+from config import API_URL, TARGET
+from data import load_data
+
+logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
+logger = logging.getLogger(__name__)
+
+N_SAMPLES = 3
 
 
-def load_payload(payload_path: str | None) -> dict[str, object]:
-    """Load a JSON payload from disk or fall back to the default example."""
+def build_payloads(n: int = N_SAMPLES) -> list[dict[str, object]]:
+    """Build n valid payloads from the project dataset."""
+    features = load_data().drop(columns=[TARGET])
+    sample = features.sample(n=min(n, len(features)), random_state=42)
+    return [json.loads(row.to_json()) for _, row in sample.iterrows()]
+
+
+def load_payloads(payload_path: str | None) -> list[dict[str, object]]:
+    """Load payloads from disk or build them from the dataset."""
     if payload_path is None:
-        return DEFAULT_PAYLOAD
+        return build_payloads()
 
     path = Path(payload_path)
     with path.open("r", encoding="utf-8") as file:
-        return json.load(file)
+        data = json.load(file)
 
-
-def call_predict_api(api_url: str, payload: dict[str, object]) -> dict[str, object]:
-    """Send one prediction request to the FastAPI service."""
-    body = json.dumps(payload).encode("utf-8")
-    request = Request(
-        api_url,
-        data=body,
-        headers={"Content-Type": "application/json"},
-        method="POST",
-    )
-
-    with urlopen(request, timeout=30) as response:  # noqa: S310
-        return json.loads(response.read().decode("utf-8"))
+    if isinstance(data, list):
+        return data
+    return [data]
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
-        "--api-url",
-        default=os.getenv("API_PREDICT_URL", "http://127.0.0.1:8000/predict"),
-        help="URL complete du endpoint /predict.",
+        "--url",
+        default=API_URL,
+        help="URL de base de l'API (defaut: %(default)s).",
     )
     parser.add_argument(
         "--payload",
-        help="Chemin vers un fichier JSON contenant un payload de prediction.",
+        help="Chemin vers un fichier JSON contenant un payload ou une liste de payloads.",
     )
     args = parser.parse_args()
 
-    payload = load_payload(args.payload)
-    print("Payload envoye :")
-    print(json.dumps(payload, indent=2))
+    payloads = load_payloads(args.payload)
 
     try:
-        prediction = call_predict_api(args.api_url, payload)
-    except HTTPError as error:
-        message = error.read().decode("utf-8", errors="replace")
-        raise SystemExit(f"Erreur HTTP {error.code}: {message}") from error
-    except URLError as error:
-        raise SystemExit(f"Impossible de joindre l'API: {error.reason}") from error
+        with httpx.Client(base_url=args.url, timeout=10.0) as client:
+            health = client.get("/health")
+            logger.info("GET /health -> %s %s", health.status_code, health.json())
 
-    print("\nReponse API :")
-    print(json.dumps(prediction, indent=2))
+            for index, payload in enumerate(payloads, start=1):
+                response = client.post("/predict", json=payload)
+                logger.info(
+                    "POST /predict (#%d) -> %s %s",
+                    index,
+                    response.status_code,
+                    response.json(),
+                )
+
+            info = client.get("/model-info")
+            logger.info("GET /model-info -> %s %s", info.status_code, info.json())
+    except httpx.HTTPError as error:
+        raise SystemExit(f"Impossible de joindre l'API: {error}") from error
 
 
 if __name__ == "__main__":

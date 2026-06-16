@@ -400,6 +400,30 @@ models/optuna_confusion_matrix.png
 models/model.joblib
 ```
 
+### Etape 7 bis - Evaluation du modele
+
+Le fichier `src/evaluate.py` reprend la logique du TP d'evaluation modele :
+
+- recuperer la derniere version enregistree dans le Model Registry MLflow ;
+- construire un jeu d'evaluation ;
+- logger ce dataset dans MLflow pour la tracabilite ;
+- executer `mlflow.models.evaluate` ;
+- appliquer une porte qualite avec des seuils configurables.
+
+Commande :
+
+```bash
+$env:PYTHONPATH = "src"
+uv run python -m evaluate
+```
+
+Les seuils peuvent etre surcharges avec :
+
+```bash
+EVAL_ROC_AUC_MIN=0.65
+EVAL_F1_MIN=0.20
+```
+
 ### Etape 8 - Dockerisation
 
 La partie Docker prepare le projet pour une execution plus stable et plus proche d'un
@@ -409,7 +433,8 @@ Fichiers ajoutes :
 
 - `docker/Dockerfile.train` : image pour lancer l'entrainement
 - `docker/Dockerfile.api` : image pour servir l'API FastAPI
-- `docker-compose.yml` : stack locale `mlflow` + `api`
+- `docker/Dockerfile.frontend` : image pour le frontend Streamlit
+- `docker-compose.yml` : stack locale `mlflow` + `train` + `api` + `frontend`
 
 Commandes principales :
 
@@ -422,17 +447,18 @@ make docker-down
 
 Details :
 
-- `make docker-build` construit les images `cars-train` et `cars-api`
-- `make docker-run` lance un entrainement baseline dans un conteneur
+- `make docker-build` construit les images `cars-train`, `cars-api` et `cars-frontend`
+- `make docker-run` lance l'entrainement one-shot via le service `train`
 - `make docker-up` demarre MLflow sur `http://127.0.0.1:5000` et l'API sur
-  `http://127.0.0.1:8000`
+  `http://127.0.0.1:8000`, ainsi que le frontend sur `http://127.0.0.1:8501`
 - `make docker-down` arrete la stack
 
 La stack Docker continue d'utiliser :
 
-- `models/model.joblib` pour le service d'inference
-- `mlflow.db` et `mlruns/` comme stockage local MLflow
-- le dossier `data/` monte dans le conteneur d'entrainement
+- un volume `models_data` partage entre `train` et `api`
+- un volume `mlflow_data` pour conserver MLflow
+- le dossier `data/` monte dans le conteneur `train`
+- `API_URL=http://api:8000` dans le frontend via le DNS interne Docker Compose
 
 Exemple de sequence :
 
@@ -447,4 +473,5 @@ Puis ouvrir :
 ```text
 http://127.0.0.1:5000
 http://127.0.0.1:8000/docs
+http://127.0.0.1:8501
 ```
