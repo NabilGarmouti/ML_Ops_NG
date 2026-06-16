@@ -30,7 +30,7 @@ RESET  := $(shell printf '\033[0m')
 
 .PHONY: help \
         check-uv check-venv venv-create install sync deps-sync lock reset-env doctor \
-        data train train-models train-optuna mlflow api frontend \
+        data train train-models train-optuna mlflow api predict-api frontend \
         docker-build docker-run docker-up docker-down \
         lint format type test check
 
@@ -99,26 +99,31 @@ mlflow: ## Demarre le serveur MLflow (docker compose)
 api: ## Lance l'API FastAPI en rechargement auto (voir API_HOST/API_PORT)
 	$(RUN) uvicorn api:app --reload --host $(API_HOST) --port $(API_PORT)
 
+predict-api: ## Envoie un payload d'exemple au endpoint /predict
+	$(PYTHON) -m script
+
 frontend: ## Lance le frontend Streamlit (voir FRONTEND_PORT, API_URL)
 	# TODO (S14bis) : $(RUN) streamlit run frontend/app.py --server.port $(FRONTEND_PORT)
 
-docker-build: ## Construit l'image d'entrainement
-	# TODO (S8) : docker build -f docker/Dockerfile.train -t cars-train .
+docker-build: ## Construit les images Docker du projet
+	docker build -f docker/Dockerfile.train -t cars-train .
+	docker build -f docker/Dockerfile.api -t cars-api .
+	docker build -f docker/Dockerfile.mlflow -t cars-mlflow .
 
-docker-run: ## Lance l'entrainement en conteneur
-	# TODO (S8) : docker run --rm -v "$(CURDIR)/models:/app/models" cars-train
+docker-run: ## Lance l'entrainement baseline en conteneur
+	docker run --rm -e PYTHONPATH=/app/src -e MLFLOW_TRACKING_URI=sqlite:///mlflow.db -v "$(CURDIR)/models:/app/models" -v "$(CURDIR)/data:/app/data" -v "$(CURDIR)/mlruns:/app/mlruns" -v "$(CURDIR)/mlflow.db:/app/mlflow.db" cars-train
 
-docker-up: ## Demarre la stack (mlflow, api, frontend)
-	# TODO (S14) : docker compose -f docker-compose.yml up -d --build mlflow api frontend
+docker-up: ## Demarre la stack Docker (mlflow + api)
+	docker compose -f docker-compose.yml up -d --build mlflow api
 
-docker-down: ## Arrete et supprime les conteneurs (conserve les volumes)
-	# TODO (S14) : docker compose -f docker-compose.yml down
+docker-down: ## Arrete et supprime la stack Docker
+	docker compose -f docker-compose.yml down
 
 lint: ## Verifie le style (ruff)
-	$(RUN) ruff check src
+	$(RUN) ruff check src tests
 
 format: ## Formate le code (ruff)
-	$(RUN) ruff format src
+	$(RUN) ruff format src tests
 
 type: ## Verifie les types (mypy)
 	$(RUN) mypy src

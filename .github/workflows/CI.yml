@@ -1,0 +1,139 @@
+name: CI
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+
+      - name: Sync dependencies
+        run: uv sync --extra dev --extra explain
+
+      - name: Ruff
+        run: uv run ruff check src tests
+
+      - name: Mypy
+        run: uv run mypy src
+
+      - name: Pytest
+        env:
+          PYTHONPATH: src
+        run: uv run pytest
+
+  training-smoke:
+    runs-on: ubuntu-latest
+    needs: quality
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+
+      - name: Sync dependencies
+        run: uv sync --extra dev --extra explain
+
+      - name: Validate data
+        env:
+          PYTHONPATH: src
+        run: make data
+
+      - name: Baseline smoke train
+        env:
+          PYTHONPATH: src
+        run: make train SAMPLE_SIZE=1000 SELECTION_METRIC=f1
+
+      - name: GridSearch smoke train
+        env:
+          PYTHONPATH: src
+        run: make train-models CV=2 SCORING=f1 SAMPLE_SIZE=500
+
+      - name: Optuna smoke train
+        env:
+          PYTHONPATH: src
+        run: make train-optuna N_TRIALS=1 CV=2 SCORING=f1 SAMPLE_SIZE=300
+
+      - name: Upload model artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: training-artifacts
+          path: |
+            models/*.csv
+            models/*.png
+
+  api-smoke:
+    runs-on: ubuntu-latest
+    needs: training-smoke
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+
+      - name: Sync dependencies
+        run: uv sync --extra dev
+
+      - name: Train model for API
+        env:
+          PYTHONPATH: src
+        run: make train SAMPLE_SIZE=1000 SELECTION_METRIC=f1
+
+      - name: Start API
+        env:
+          PYTHONPATH: src
+        run: |
+          uv run uvicorn api:app --host 127.0.0.1 --port 8000 &
+          sleep 10
+
+      - name: Health check
+        run: curl --fail http://127.0.0.1:8000/health
+
+      - name: Predict check
+        env:
+          PYTHONPATH: src
+        run: uv run python -m script
+
+  docker:
+    runs-on: ubuntu-latest
+    needs: quality
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build training image
+        run: docker build -f docker/Dockerfile.train -t cars-train .
+
+      - name: Build API image
+        run: docker build -f docker/Dockerfile.api -t cars-api .
+
+      - name: Build MLflow image
+        run: docker build -f docker/Dockerfile.mlflow -t cars-mlflow .
+
+      - name: Validate compose file
+        run: docker compose -f docker-compose.yml config
+

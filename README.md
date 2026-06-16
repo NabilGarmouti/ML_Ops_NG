@@ -291,6 +291,9 @@ models/model.joblib
 
 Le fichier `src/api.py` expose le modele sauvegarde dans `models/model.joblib`.
 
+Le fichier `src/script.py` joue le role de client simple pour appeler l'endpoint
+`POST /predict` avec un payload JSON.
+
 Endpoints disponibles :
 
 - `GET /health` : verifie que l'API repond ;
@@ -331,6 +334,20 @@ Exemple de payload :
   "Policy_Sales_Channel": 26.0,
   "Vintage": 217
 }
+```
+
+Appel du endpoint depuis le script client :
+
+```bash
+$env:PYTHONPATH = "src"
+uv run python -m script
+```
+
+Le script peut aussi lire un payload depuis un fichier JSON :
+
+```bash
+$env:PYTHONPATH = "src"
+uv run python -m script --payload payload.json
 ```
 
 ### Etape 7 - Optimisation avec Optuna
@@ -381,4 +398,53 @@ Artefacts locaux generes :
 models/optuna_metrics.csv
 models/optuna_confusion_matrix.png
 models/model.joblib
+```
+
+### Etape 8 - Dockerisation
+
+La partie Docker prepare le projet pour une execution plus stable et plus proche d'un
+deploiement reel.
+
+Fichiers ajoutes :
+
+- `docker/Dockerfile.train` : image pour lancer l'entrainement
+- `docker/Dockerfile.api` : image pour servir l'API FastAPI
+- `docker-compose.yml` : stack locale `mlflow` + `api`
+
+Commandes principales :
+
+```bash
+make docker-build
+make docker-run
+make docker-up
+make docker-down
+```
+
+Details :
+
+- `make docker-build` construit les images `cars-train` et `cars-api`
+- `make docker-run` lance un entrainement baseline dans un conteneur
+- `make docker-up` demarre MLflow sur `http://127.0.0.1:5000` et l'API sur
+  `http://127.0.0.1:8000`
+- `make docker-down` arrete la stack
+
+La stack Docker continue d'utiliser :
+
+- `models/model.joblib` pour le service d'inference
+- `mlflow.db` et `mlruns/` comme stockage local MLflow
+- le dossier `data/` monte dans le conteneur d'entrainement
+
+Exemple de sequence :
+
+```bash
+make docker-build
+make docker-run
+make docker-up
+```
+
+Puis ouvrir :
+
+```text
+http://127.0.0.1:5000
+http://127.0.0.1:8000/docs
 ```
