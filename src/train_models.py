@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import warnings
 from dataclasses import dataclass
+from math import prod
 from pathlib import Path
 
 import joblib
@@ -124,6 +125,11 @@ def build_pipeline(estimator: object) -> Pipeline:
     )
 
 
+def count_param_combinations(param_grid: dict[str, list]) -> int:
+    """Count how many hyperparameter combinations GridSearchCV will try."""
+    return prod(len(values) for values in param_grid.values())
+
+
 def optimize_model(
     spec: ModelSpec,
     x_train,
@@ -134,6 +140,13 @@ def optimize_model(
     scoring: str,
 ) -> FitResult:
     """Optimize one model family with GridSearchCV and evaluate it on the test set."""
+    combinations = count_param_combinations(spec.param_grid)
+    total_fits = combinations * cv
+    print(
+        f">> {spec.name}: {combinations} combinaisons x {cv} folds = "
+        f"{total_fits} entrainements",
+        flush=True,
+    )
     search = GridSearchCV(
         estimator=build_pipeline(spec.estimator),
         param_grid=spec.param_grid,
@@ -141,10 +154,17 @@ def optimize_model(
         scoring=scoring,
         n_jobs=-1,
         refit=True,
+        verbose=2,
     )
+    print(f">> {spec.name}: debut GridSearchCV", flush=True)
     search.fit(x_train, y_train)
+    print(
+        f">> {spec.name}: fin GridSearchCV, meilleur cv_{scoring}={search.best_score_:.3f}",
+        flush=True,
+    )
 
     best = search.best_estimator_
+    print(f">> {spec.name}: evaluation sur le jeu de test", flush=True)
     proba = best.predict_proba(x_test)[:, 1]
     preds = (proba >= 0.5).astype(int)
 

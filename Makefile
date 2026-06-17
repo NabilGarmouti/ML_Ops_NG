@@ -12,6 +12,7 @@ API_HOST      ?= 127.0.0.1
 API_PORT      ?= 8000
 FRONTEND_PORT ?= 8501
 MLFLOW_PORT   := 5000
+AIRFLOW_PORT  ?= 8080
 C             ?= 1.0
 MAX_ITER      ?= 1000
 CV            ?= 5
@@ -20,18 +21,26 @@ N_TRIALS      ?= 30
 SAMPLE_SIZE   ?= 0
 SELECTION_METRIC ?= f1
 
+ifeq ($(OS),Windows_NT)
+YELLOW :=
+GREEN  :=
+RED    :=
+CYAN   :=
+RESET  :=
+else
 YELLOW := $(shell printf '\033[33m')
 GREEN  := $(shell printf '\033[32m')
 RED    := $(shell printf '\033[31m')
 CYAN   := $(shell printf '\033[36m')
 RESET  := $(shell printf '\033[0m')
+endif
 
 .DEFAULT_GOAL := help
 
 .PHONY: help \
         check-uv check-venv venv-create install sync deps-sync lock reset-env doctor \
         data train train-models train-optuna evaluate mlflow api predict-api frontend \
-        docker-build docker-run docker-up docker-down \
+        docker-build docker-run docker-up docker-down share \
         lint format type test check
 
 help: ## Liste des commandes disponibles
@@ -121,6 +130,37 @@ docker-up: ## Demarre la stack Docker (mlflow + api + frontend)
 
 docker-down: ## Arrete et supprime la stack Docker
 	docker compose -f docker-compose.yml down
+
+ifeq ($(OS),Windows_NT)
+share: ## Affiche les URLs LAN a partager depuis Windows
+	@powershell -NoProfile -ExecutionPolicy Bypass -File scripts/share_urls.ps1 -ApiPort $(API_PORT) -FrontendPort $(FRONTEND_PORT) -MlflowPort $(MLFLOW_PORT) -AirflowPort $(AIRFLOW_PORT)
+else
+share: ## Affiche les URLs LAN a partager depuis macOS/Linux
+	@IP=$$( \
+		IFACE=$$(route -n get default 2>/dev/null | awk '/interface:/{print $$2}'); \
+		ipconfig getifaddr "$$IFACE" 2>/dev/null \
+		|| ifconfig 2>/dev/null | awk '/inet /{print $$2}' | grep -v '^127\.' | head -1 \
+		|| hostname -I 2>/dev/null | awk '{print $$1}' \
+	); \
+	if [ -z "$$IP" ]; then echo "$(RED)[ERREUR] IP LAN introuvable$(RESET)"; exit 1; fi; \
+	echo "$(GREEN)IP LAN de la machine : $$IP$(RESET)"; \
+	echo ""; \
+	echo "$(CYAN)URLs a partager (autres machines du meme reseau Wi-Fi/LAN) :$(RESET)"; \
+	for entry in "API (docs):$(API_PORT):/docs" "Frontend:$(FRONTEND_PORT):" "MLflow:$(MLFLOW_PORT):" "Airflow:$(AIRFLOW_PORT):"; do \
+		name=$$(echo "$$entry" | cut -d: -f1); \
+		port=$$(echo "$$entry" | cut -d: -f2); \
+		path=$$(echo "$$entry" | cut -d: -f3); \
+		if command -v lsof >/dev/null 2>&1 && lsof -nP -iTCP:$$port -sTCP:LISTEN -t >/dev/null 2>&1; then \
+			state="$(GREEN)actif$(RESET)"; \
+		else \
+			state="$(YELLOW)hors ligne$(RESET)"; \
+		fi; \
+		printf " %-11s http://%s:%s%s [%b]\n" "$$name" "$$IP" "$$port" "$$path" "$$state"; \
+	done; \
+	echo ""; \
+	echo "$(YELLOW)Les services Docker sont exposes en 0.0.0.0 via docker compose."; \
+	echo "Si une autre machine ne peut pas se connecter, verifier le pare-feu ou l'isolation client du routeur.$(RESET)"
+endif
 
 lint: ## Verifie le style (ruff)
 	$(RUN) ruff check src tests frontend
