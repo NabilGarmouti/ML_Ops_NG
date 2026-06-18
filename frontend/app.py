@@ -197,7 +197,8 @@ def render_public_links() -> None:
           const services = [
             {label: "MLflow", port: "5000", path: ""},
             {label: "Swagger API", port: "8000", path: "/docs"},
-            {label: "Frontend", port: "8501", path: ""}
+            {label: "Frontend", port: "8501", path: ""},
+            {label: "Airflow", port: "8080", path: ""}
           ];
 
           function currentHost() {
@@ -239,7 +240,7 @@ def render_public_links() -> None:
           }).join("");
         </script>
         """,
-        height=54,
+        height=62,
     )
 
 
@@ -444,6 +445,7 @@ with architecture_tab:
         - `mlflow` : suivi des experiences et artefacts
         - `api` : service FastAPI qui expose `/health`, `/model-info` et `/predict`
         - `frontend` : interface Streamlit pour expliquer le projet et tester le modele
+        - `airflow` : orchestration du re-entrainement planifie
 
         Le modele servi est lu depuis `models/model.joblib`, monte dans le container API.
         """

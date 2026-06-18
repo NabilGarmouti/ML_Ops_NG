@@ -40,7 +40,8 @@ endif
 .PHONY: help \
         check-uv check-venv venv-create install sync deps-sync lock reset-env doctor \
         data train train-models train-optuna evaluate mlflow api predict-api frontend \
-        docker-build docker-run docker-up docker-down share \
+        docker-build docker-run docker-up docker-down docker-reset \
+        airflow airflow-password airflow-logs share \
         lint format type test check
 
 help: ## Liste des commandes disponibles
@@ -130,6 +131,21 @@ docker-up: ## Demarre la stack Docker (mlflow + api + frontend)
 
 docker-down: ## Arrete et supprime la stack Docker
 	docker compose -f docker-compose.yml down
+
+docker-reset: ## Arrete la stack Docker et supprime les volumes
+	docker compose -f docker-compose.yml down -v
+
+airflow: ## Demarre Airflow pour orchestrer le re-entrainement
+	mkdir -p dags logs models
+	-chmod -R a+rwX dags logs models data
+	docker compose -f docker-compose.yml up -d --build mlflow airflow
+
+airflow-password: ## Affiche les identifiants Airflow standalone
+	@echo "Utilisateur Airflow : admin"
+	@docker compose -f docker-compose.yml exec airflow cat /opt/airflow/standalone_admin_password.txt
+
+airflow-logs: ## Suit les logs Airflow
+	docker compose -f docker-compose.yml logs -f airflow
 
 ifeq ($(OS),Windows_NT)
 share: ## Affiche les URLs LAN a partager depuis Windows

@@ -61,5 +61,28 @@ services:
       api:
         condition: service_healthy
 
+  airflow:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.airflow
+    command: standalone
+    environment:
+      AIRFLOW__CORE__LOAD_EXAMPLES: "false"
+      AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: "false"
+      AIRFLOW__WEBSERVER__WORKERS: "1"
+      MLFLOW_TRACKING_URI: http://mlflow:5000
+      PYTHONPATH: /opt/airflow/project/src
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./dags:/opt/airflow/dags
+      - ./src:/opt/airflow/project/src
+      - ./data:/opt/airflow/project/data
+      - ./models:/opt/airflow/project/models
+      - airflow_logs:/opt/airflow/logs
+    depends_on:
+      - mlflow
+
 volumes:
   mlflow_data:
+  airflow_logs:
