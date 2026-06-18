@@ -12,6 +12,7 @@ import streamlit.components.v1 as components
 
 API_URL = os.environ.get("API_URL", "http://127.0.0.1:8000")
 AUTHOR_NAME = "Nabil Garmouti"
+REPO_URL = "https://github.com/NabilGarmouti/ML_Ops_NG"
 ROOT = Path(__file__).resolve().parents[1]
 MODELS_DIR = ROOT / "models"
 
@@ -66,6 +67,14 @@ def render_theme() -> None:
               linear-gradient(180deg, rgba(15, 23, 42, 0.98), rgba(17, 24, 39, 0.98));
           }
 
+          .hero-top {
+            display: flex;
+            justify-content: space-between;
+            gap: 18px;
+            align-items: flex-start;
+            flex-wrap: wrap;
+          }
+
           .hero h1 {
             font-size: 2.35rem;
             margin: 0 0 8px 0;
@@ -100,6 +109,61 @@ def render_theme() -> None:
             font-size: 0.86rem;
           }
 
+          .hero-link {
+            display: inline-block;
+            border: 1px solid rgba(125, 211, 252, 0.48);
+            border-radius: 8px;
+            padding: 10px 14px;
+            background: rgba(8, 47, 73, 0.58);
+            color: #f8fafc !important;
+            text-decoration: none !important;
+            font-weight: 700;
+            white-space: nowrap;
+          }
+
+          .service-grid {
+            display: grid;
+            grid-template-columns: repeat(5, minmax(150px, 1fr));
+            gap: 12px;
+            margin: 8px 0 18px 0;
+          }
+
+          .service-card {
+            border: 1px solid rgba(148, 163, 184, 0.24);
+            border-radius: 8px;
+            padding: 14px 15px;
+            background: rgba(15, 23, 42, 0.54);
+            color: #f8fafc !important;
+            text-decoration: none !important;
+            min-height: 88px;
+          }
+
+          .service-card:hover {
+            border-color: rgba(125, 211, 252, 0.7);
+            background: rgba(15, 23, 42, 0.82);
+          }
+
+          .service-label {
+            font-weight: 750;
+            margin-bottom: 7px;
+          }
+
+          .service-url {
+            color: rgba(203, 213, 225, 0.78);
+            font-size: 0.82rem;
+            line-height: 1.25;
+            overflow-wrap: anywhere;
+          }
+
+          .status-dot {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 999px;
+            background: #22c55e;
+            margin-right: 8px;
+          }
+
           .section-card {
             border: 1px solid rgba(148, 163, 184, 0.22);
             border-radius: 8px;
@@ -131,12 +195,20 @@ def render_hero() -> None:
     st.markdown(
         """
         <div class="hero">
-          <h1>Cars Cross-Sell</h1>
-          <div class="hero-author">Projet realise par Nabil Garmouti</div>
-          <p>
-            Projet MLOps de classification binaire pour prioriser les clients les plus
-            susceptibles de souscrire une assurance automobile.
-          </p>
+          <div class="hero-top">
+            <div>
+              <h1>Cars Cross-Sell</h1>
+              <div class="hero-author">Projet realise par Nabil Garmouti</div>
+              <p>
+                Projet MLOps de classification binaire pour prioriser les clients les plus
+                susceptibles de souscrire une assurance automobile.
+              </p>
+            </div>
+            <a class="hero-link" href="https://github.com/NabilGarmouti/ML_Ops_NG"
+               target="_blank" rel="noopener noreferrer">
+              Repo GitHub
+            </a>
+          </div>
           <div class="badges">
             <span class="badge">FastAPI</span>
             <span class="badge">Streamlit</span>
@@ -201,9 +273,55 @@ def render_public_links() -> None:
     """Render service links using the hostname used by the browser."""
     components.html(
         """
-        <div id="public-links" style="display:flex; gap:16px; flex-wrap:wrap;"></div>
+        <style>
+          body { margin: 0; }
+          #public-links {
+            display: grid;
+            grid-template-columns: repeat(5, minmax(150px, 1fr));
+            gap: 12px;
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+          }
+          .service-card {
+            border: 1px solid rgba(148, 163, 184, 0.28);
+            border-radius: 8px;
+            padding: 14px 15px;
+            background: rgba(15, 23, 42, 0.62);
+            color: #f8fafc;
+            text-decoration: none;
+            min-height: 86px;
+            box-sizing: border-box;
+          }
+          .service-card:hover {
+            border-color: rgba(125, 211, 252, 0.82);
+            background: rgba(15, 23, 42, 0.9);
+          }
+          .service-label {
+            font-size: 15px;
+            font-weight: 760;
+            margin-bottom: 8px;
+          }
+          .service-url {
+            color: rgba(203, 213, 225, 0.78);
+            font-size: 12px;
+            line-height: 1.25;
+            overflow-wrap: anywhere;
+          }
+          .status-dot {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 999px;
+            background: #22c55e;
+            margin-right: 8px;
+          }
+          @media (max-width: 900px) {
+            #public-links { grid-template-columns: repeat(2, minmax(150px, 1fr)); }
+          }
+        </style>
+        <div id="public-links"></div>
         <script>
           const services = [
+            {label: "Repo GitHub", href: "https://github.com/NabilGarmouti/ML_Ops_NG"},
             {label: "MLflow", port: "5000", path: ""},
             {label: "Swagger API", port: "8000", path: "/docs"},
             {label: "Frontend", port: "8501", path: ""},
@@ -231,25 +349,18 @@ def render_public_links() -> None:
           const container = document.getElementById("public-links");
 
           container.innerHTML = services.map((service) => {
-            const href = `${protocol}//${host}:${service.port}${service.path}`;
+            const href = service.href || `${protocol}//${host}:${service.port}${service.path}`;
+            const shownUrl = service.href || `${host}:${service.port}${service.path}`;
             return `
               <a href="${href}" target="_blank" rel="noopener noreferrer"
-                 style="
-                   display:inline-block;
-                   padding:10px 16px;
-                   border:1px solid rgba(250,250,250,0.25);
-                   border-radius:8px;
-                   color:#fafafa;
-                   text-decoration:none;
-                   font-family:system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
-                   font-size:15px;
-                 ">
-                ${service.label}
+                 class="service-card">
+                <div class="service-label"><span class="status-dot"></span>${service.label}</div>
+                <div class="service-url">${shownUrl}</div>
               </a>`;
           }).join("");
         </script>
         """,
-        height=62,
+        height=118,
     )
 
 
@@ -259,6 +370,7 @@ render_hero()
 with st.sidebar:
     st.caption(f"Projet realise par {AUTHOR_NAME}")
     st.header("Pilotage")
+    st.link_button("Repo GitHub", REPO_URL, use_container_width=True)
     api_url = st.text_input("URL de l'API", value=API_URL)
     ok, health = get_api_json("/health")
     if ok:
@@ -273,6 +385,9 @@ home_tab, predict_tab, models_tab, architecture_tab = st.tabs(
 )
 
 with home_tab:
+    st.subheader("Acces rapides")
+    render_public_links()
+
     st.subheader("Problematique metier")
     render_card(
         "Objectif",
@@ -286,6 +401,17 @@ with home_tab:
     col_b.metric("Cible", "Response")
     col_c.metric("Taux positif", "12.3%")
     col_d.metric("Cas metier", "Cross-sell")
+
+    home_metrics = load_metrics()
+    if home_metrics:
+        latest_label, latest_frame = list(home_metrics.items())[-1]
+        latest_best = best_row(latest_frame)
+        st.subheader("Etat du modele")
+        model_a, model_b, model_c, model_d = st.columns(4)
+        model_a.metric("Derniere strategie", latest_label.split(" - ")[0])
+        model_b.metric("Meilleur modele", str(latest_best["model"]))
+        model_c.metric("F1", format_metric(float(latest_best["f1"])))
+        model_d.metric("ROC AUC", format_metric(float(latest_best["roc_auc"])))
 
     st.subheader("Dataset")
     render_card(
@@ -469,22 +595,7 @@ with architecture_tab:
         "Sur le reseau local, ils pointeront donc vers l'IP LAN de ta machine."
     )
 
-    st.subheader("Acces Airflow")
-    render_card(
-        "Identifiants",
-        "Utilisateur : `admin`<br>"
-        "Mot de passe : lancer `make airflow-password` depuis la racine du projet.",
-    )
-
-    st.code(
-        """make deploy-local SAMPLE_SIZE=5000 CV=2 N_TRIALS=5
-make airflow-password
-
-GET  /health
-GET  /model-info
-POST /predict
-
-DAG cars_training_pipeline
-DAG cars_predict_pipeline""",
-        language="bash",
+    st.info(
+        "Airflow orchestre deux DAGs distincts : `cars_training_pipeline` pour "
+        "l'entrainement et `cars_predict_pipeline` pour les predictions de test."
     )

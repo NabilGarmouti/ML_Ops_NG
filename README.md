@@ -475,3 +475,72 @@ http://127.0.0.1:5000
 http://127.0.0.1:8000/docs
 http://127.0.0.1:8501
 ```
+
+### Etape 9 - Workflow Docker reproductible
+
+Le Makefile contient un workflow complet pour repartir d'un environnement Docker propre,
+reconstruire les images, re-entrainer le modele et relancer les services.
+
+Commande de demonstration locale :
+
+```bash
+make deploy-local SAMPLE_SIZE=50000 CV=2 N_TRIALS=5
+```
+
+Cette commande execute :
+
+- demarrage de MLflow ;
+- entrainement `train_models` avec GridSearchCV ;
+- entrainement `train_optuna` avec Optuna ;
+- generation de `models/model.joblib` ;
+- demarrage de `mlflow`, `api`, `frontend` et `airflow`.
+
+Pour un test plus rapide, reduire `SAMPLE_SIZE` :
+
+```bash
+make deploy-local SAMPLE_SIZE=5000 CV=2 N_TRIALS=5
+```
+
+Services exposes localement :
+
+```text
+Frontend Streamlit : http://127.0.0.1:8501
+API Swagger        : http://127.0.0.1:8000/docs
+MLflow             : http://127.0.0.1:5000
+Airflow            : http://127.0.0.1:8080
+```
+
+### Etape 10 - Orchestration Airflow
+
+Airflow orchestre deux DAGs separes :
+
+- `cars_training_pipeline` : validation dataset, GridSearchCV, Optuna, evaluation ;
+- `cars_predict_pipeline` : verification de l'API puis envoi de payloads de test via
+  `src/script.py`.
+
+Schedules :
+
+- entrainement : toutes les 4 heures, cron `0 */4 * * *` ;
+- prediction : toutes les 2 heures, cron `0 */2 * * *`.
+
+Les logs du DAG de prediction permettent de retrouver les payloads envoyes et les reponses
+retournees par l'API.
+
+Airflow est lance via Docker Compose avec :
+
+```bash
+make airflow
+```
+
+Recuperation du mot de passe Airflow :
+
+```bash
+make airflow-password
+```
+
+Identifiant par defaut :
+
+```text
+user: admin
+password: affiche par make airflow-password
+```
