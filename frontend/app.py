@@ -469,8 +469,16 @@ with architecture_tab:
         "Sur le reseau local, ils pointeront donc vers l'IP LAN de ta machine."
     )
 
+    st.subheader("Acces Airflow")
+    render_card(
+        "Identifiants",
+        "Utilisateur : `admin`<br>"
+        "Mot de passe : lancer `make airflow-password` depuis la racine du projet.",
+    )
+
     st.code(
         """make deploy-local SAMPLE_SIZE=5000 CV=2 N_TRIALS=5
+make airflow-password
 
 GET  /health
 GET  /model-info
