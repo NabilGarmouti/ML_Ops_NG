@@ -19,7 +19,7 @@ with DAG(
     dag_id="cars_predict_pipeline",
     description="Verifie l'API et lance des predictions de test via le client projet.",
     start_date=pendulum.datetime(2026, 1, 1, tz="UTC"),
-    schedule="@daily",
+    schedule="0 */2 * * *",
     catchup=False,
     max_active_runs=1,
     tags=["cars", "predict", "api"],

@@ -470,7 +470,7 @@ with architecture_tab:
     )
 
     st.code(
-        """docker compose up --build mlflow api frontend airflow
+        """make deploy-local SAMPLE_SIZE=5000 CV=2 N_TRIALS=5
 
 GET  /health
 GET  /model-info

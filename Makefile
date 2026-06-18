@@ -40,7 +40,7 @@ endif
 .PHONY: help \
         check-uv check-venv venv-create install sync deps-sync lock reset-env doctor \
         data train train-models train-optuna evaluate mlflow api predict-api frontend \
-        docker-build docker-run docker-up docker-down docker-reset workflow-docker \
+        docker-build docker-run docker-up docker-down docker-reset workflow-docker deploy-local \
         airflow airflow-password airflow-logs share \
         lint format type test check
 
@@ -119,15 +119,13 @@ frontend: ## Lance le frontend Streamlit (voir FRONTEND_PORT, API_URL)
 	$(RUN) streamlit run frontend/app.py --server.port $(FRONTEND_PORT)
 
 docker-build: ## Construit les images Docker du projet
-	docker build -f docker/Dockerfile.train -t cars-train .
-	docker build -f docker/Dockerfile.api -t cars-api .
-	docker build -f docker/Dockerfile.frontend -t cars-frontend .
+	docker compose -f docker-compose.yml --profile train build train api frontend airflow
 
 docker-run: ## Lance l'entrainement en conteneur via docker compose
 	docker compose -f docker-compose.yml --profile train run --rm train
 
-docker-up: ## Demarre la stack Docker (mlflow + api + frontend)
-	docker compose -f docker-compose.yml up -d --build mlflow api frontend
+docker-up: ## Demarre la stack Docker (mlflow + api + frontend + airflow)
+	docker compose -f docker-compose.yml up -d --build mlflow api frontend airflow
 
 docker-down: ## Arrete et supprime la stack Docker
 	docker compose -f docker-compose.yml down
@@ -143,6 +141,8 @@ workflow-docker: ## Reproduit le workflow Docker complet (train + serving + Airf
 	docker compose -f docker-compose.yml --profile train run --rm train uv run python -m train_models --cv $(CV) --scoring $(SCORING) --sample-size $(SAMPLE_SIZE)
 	docker compose -f docker-compose.yml --profile train run --rm train uv run python -m train_optuna --n-trials $(N_TRIALS) --cv $(CV) --scoring $(SCORING) --sample-size $(SAMPLE_SIZE)
 	docker compose -f docker-compose.yml up -d --build mlflow api frontend airflow
+
+deploy-local: workflow-docker ## Alias attendu pour deployer localement le workflow complet Docker
 
 airflow: ## Demarre Airflow pour orchestrer le re-entrainement
 	mkdir -p dags logs models

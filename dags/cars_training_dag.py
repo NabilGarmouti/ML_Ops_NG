@@ -19,7 +19,7 @@ with DAG(
     dag_id="cars_training_pipeline",
     description="Valide les donnees, entraine les modeles optimises et evalue le modele final.",
     start_date=pendulum.datetime(2026, 1, 1, tz="UTC"),
-    schedule="@weekly",
+    schedule="0 */4 * * *",
     catchup=False,
     max_active_runs=1,
     tags=["cars", "training", "mlops"],
