@@ -11,6 +11,7 @@ import streamlit as st
 import streamlit.components.v1 as components
 
 API_URL = os.environ.get("API_URL", "http://127.0.0.1:8000")
+AUTHOR_NAME = "Nabil Garmouti"
 ROOT = Path(__file__).resolve().parents[1]
 MODELS_DIR = ROOT / "models"
 
@@ -78,6 +79,12 @@ def render_theme() -> None:
             margin-bottom: 16px;
           }
 
+          .hero-author {
+            color: rgba(186, 230, 253, 0.96);
+            font-weight: 650;
+            margin-bottom: 12px;
+          }
+
           .badges {
             display: flex;
             gap: 8px;
@@ -125,6 +132,7 @@ def render_hero() -> None:
         """
         <div class="hero">
           <h1>Cars Cross-Sell</h1>
+          <div class="hero-author">Projet realise par Nabil Garmouti</div>
           <p>
             Projet MLOps de classification binaire pour prioriser les clients les plus
             susceptibles de souscrire une assurance automobile.
@@ -133,6 +141,7 @@ def render_hero() -> None:
             <span class="badge">FastAPI</span>
             <span class="badge">Streamlit</span>
             <span class="badge">MLflow</span>
+            <span class="badge">Airflow</span>
             <span class="badge">Docker Compose</span>
             <span class="badge">GridSearchCV</span>
             <span class="badge">Optuna</span>
@@ -248,6 +257,7 @@ render_theme()
 render_hero()
 
 with st.sidebar:
+    st.caption(f"Projet realise par {AUTHOR_NAME}")
     st.header("Pilotage")
     api_url = st.text_input("URL de l'API", value=API_URL)
     ok, health = get_api_json("/health")
@@ -259,7 +269,7 @@ with st.sidebar:
     st.caption("Les predictions sont servies par le modele monte dans le container API.")
 
 home_tab, predict_tab, models_tab, architecture_tab = st.tabs(
-    ["Accueil", "Prediction", "Modeles", "API & Docker"]
+    ["Accueil", "Prediction", "Modeles", "API, Docker & Airflow"]
 )
 
 with home_tab:
@@ -301,7 +311,8 @@ with home_tab:
             ["4", "Optuna", "Recherche bayesienne et tracking des trials"],
             ["5", "Evaluation", "Courbes, matrice de confusion, ROC AUC, lift"],
             ["6", "Serving", "API FastAPI, client de prediction, frontend Streamlit"],
-            ["7", "Industrialisation", "Docker Compose, CI GitHub Actions, CD GHCR"],
+            ["7", "Orchestration", "Deux DAGs Airflow : entrainement et prediction"],
+            ["8", "Industrialisation", "Docker Compose, CI GitHub Actions, CD GHCR"],
         ],
         columns=["Etape", "Bloc", "Resultat"],
     )
@@ -445,7 +456,8 @@ with architecture_tab:
         - `mlflow` : suivi des experiences et artefacts
         - `api` : service FastAPI qui expose `/health`, `/model-info` et `/predict`
         - `frontend` : interface Streamlit pour expliquer le projet et tester le modele
-        - `airflow` : orchestration du re-entrainement planifie
+        - `airflow` : orchestration avec deux DAGs separes, un pour l'entrainement
+          et un pour les predictions de test
 
         Le modele servi est lu depuis `models/model.joblib`, monte dans le container API.
         """
@@ -458,10 +470,13 @@ with architecture_tab:
     )
 
     st.code(
-        """docker compose up --build mlflow api frontend
+        """docker compose up --build mlflow api frontend airflow
 
 GET  /health
 GET  /model-info
-POST /predict""",
+POST /predict
+
+DAG cars_training_pipeline
+DAG cars_predict_pipeline""",
         language="bash",
     )
