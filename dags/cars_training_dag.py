@@ -1,4 +1,4 @@
-"""DAG Airflow pour orchestrer le re-entrainement du projet Cars Cross-Sell."""
+"""DAG Airflow dedie au re-entrainement du modele Cars Cross-Sell."""
 
 from __future__ import annotations
 
@@ -16,13 +16,13 @@ def project_command(command: str) -> str:
 
 
 with DAG(
-    dag_id="cars_retraining_pipeline",
-    description="Validation data, optimisation GridSearchCV, optimisation Optuna et evaluation.",
+    dag_id="cars_training_pipeline",
+    description="Valide les donnees, entraine les modeles optimises et evalue le modele final.",
     start_date=pendulum.datetime(2026, 1, 1, tz="UTC"),
     schedule="@weekly",
     catchup=False,
     max_active_runs=1,
-    tags=["cars", "mlops", "retraining"],
+    tags=["cars", "training", "mlops"],
 ) as dag:
     sample_size = Variable.get("CARS_SAMPLE_SIZE", default_var="5000")
     cv = Variable.get("CARS_CV", default_var="2")

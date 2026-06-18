@@ -40,7 +40,7 @@ endif
 .PHONY: help \
         check-uv check-venv venv-create install sync deps-sync lock reset-env doctor \
         data train train-models train-optuna evaluate mlflow api predict-api frontend \
-        docker-build docker-run docker-up docker-down docker-reset \
+        docker-build docker-run docker-up docker-down docker-reset workflow-docker \
         airflow airflow-password airflow-logs share \
         lint format type test check
 
@@ -135,10 +135,19 @@ docker-down: ## Arrete et supprime la stack Docker
 docker-reset: ## Arrete la stack Docker et supprime les volumes
 	docker compose -f docker-compose.yml down -v
 
+workflow-docker: ## Reproduit le workflow Docker complet (train + serving + Airflow)
+	mkdir -p models logs dags
+	-chmod -R a+rwX models logs dags data
+	docker compose -f docker-compose.yml down --remove-orphans
+	docker compose -f docker-compose.yml up -d --build mlflow
+	docker compose -f docker-compose.yml --profile train run --rm train uv run python -m train_models --cv $(CV) --scoring $(SCORING) --sample-size $(SAMPLE_SIZE)
+	docker compose -f docker-compose.yml --profile train run --rm train uv run python -m train_optuna --n-trials $(N_TRIALS) --cv $(CV) --scoring $(SCORING) --sample-size $(SAMPLE_SIZE)
+	docker compose -f docker-compose.yml up -d --build mlflow api frontend airflow
+
 airflow: ## Demarre Airflow pour orchestrer le re-entrainement
 	mkdir -p dags logs models
 	-chmod -R a+rwX dags logs models data
-	docker compose -f docker-compose.yml up -d --build mlflow airflow
+	docker compose -f docker-compose.yml up -d --build mlflow api frontend airflow
 
 airflow-password: ## Affiche les identifiants Airflow standalone
 	@echo "Utilisateur Airflow : admin"

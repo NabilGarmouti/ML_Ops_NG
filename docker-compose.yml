@@ -71,6 +71,7 @@ services:
       AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: "false"
       AIRFLOW__WEBSERVER__WORKERS: "1"
       MLFLOW_TRACKING_URI: http://mlflow:5000
+      API_URL: http://api:8000
       PYTHONPATH: /opt/airflow/project/src
     ports:
       - "8080:8080"
@@ -81,7 +82,10 @@ services:
       - ./models:/opt/airflow/project/models
       - airflow_logs:/opt/airflow/logs
     depends_on:
-      - mlflow
+      mlflow:
+        condition: service_started
+      api:
+        condition: service_healthy
 
 volumes:
   mlflow_data:
