@@ -182,7 +182,11 @@ def train(
                 model.fit(x_train, y_train)
                 metrics = evaluate_model(name, model, x_test, y_test)
                 mlflow.log_metrics({key: float(metrics[key]) for key in METRICS})
-                mlflow.sklearn.log_model(model, name="model")
+                mlflow.sklearn.log_model(
+                    model,
+                    name="model",
+                    serialization_format=mlflow.sklearn.SERIALIZATION_FORMAT_CLOUDPICKLE,
+                )
 
                 results.append(metrics)
                 fitted_models[name] = model

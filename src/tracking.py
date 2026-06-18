@@ -81,7 +81,11 @@ def log_optimized_model_run(result, x_test, y_test, cv: int, scoring: str) -> No
         )
         mlflow.log_dict(report, "classification_report.json")
         log_shap_summary(result.best_estimator, x_test, result.name)
-        mlflow.sklearn.log_model(result.best_estimator, name="model")
+        mlflow.sklearn.log_model(
+            result.best_estimator,
+            name="model",
+            serialization_format=mlflow.sklearn.SERIALIZATION_FORMAT_CLOUDPICKLE,
+        )
 
 
 def log_optimized_parent_run_params(
@@ -120,6 +124,7 @@ def log_optimized_best_model(
         best.best_estimator,
         name="best_model",
         registered_model_name=MODEL_NAME,
+        serialization_format=mlflow.sklearn.SERIALIZATION_FORMAT_CLOUDPICKLE,
     )
 
 
@@ -185,7 +190,11 @@ def log_optuna_model_run(result, x_test, y_test, n_trials: int, cv: int, scoring
         )
         mlflow.log_dict(report, "classification_report.json")
         log_shap_summary(result.best_estimator, x_test, result.name)
-        mlflow.sklearn.log_model(result.best_estimator, name="model")
+        mlflow.sklearn.log_model(
+            result.best_estimator,
+            name="model",
+            serialization_format=mlflow.sklearn.SERIALIZATION_FORMAT_CLOUDPICKLE,
+        )
 
 
 def log_optuna_best_model(
@@ -204,4 +213,5 @@ def log_optuna_best_model(
         best.best_estimator,
         name="best_model",
         registered_model_name=MODEL_NAME,
+        serialization_format=mlflow.sklearn.SERIALIZATION_FORMAT_CLOUDPICKLE,
     )
